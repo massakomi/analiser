@@ -1,0 +1,14 @@
+{{template "base" .}}
+
+{{define "title"}}Weeks{{end}}
+
+{{define "main"}}
+    <h2>Weeks</h2>
+
+    <ul>
+        {{range .Results}}
+        <li>{{.}}</li>
+        {{end}}
+    </ul>
+
+{{end}}
