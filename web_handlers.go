@@ -2,11 +2,6 @@ package main
 
 import "net/http"
 
-type Page struct {
-	Content string
-	Results []string
-}
-
 func (app *application) weeks(w http.ResponseWriter, r *http.Request) {
 
 	var texts []string
@@ -14,11 +9,7 @@ func (app *application) weeks(w http.ResponseWriter, r *http.Request) {
 	for _, week := range data {
 		texts = append(texts, week.category+" "+week.durationFormatted)
 	}
-
-	p := &Page{
-		Results: texts,
-	}
-
+	p := struct{ Results []string }{Results: texts}
 	app.display("weeks.page.html", w, p)
 }
 
