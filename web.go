@@ -2,11 +2,16 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/mux"
 	"html/template"
 	"log"
 	"net/http"
 	"runtime/debug"
 )
+
+// Routing (using gorilla/mux)
+// простейший пример https://gowebexamples.com/routes-using-gorilla-mux/
+// документация https://github.com/gorilla/mux?tab=readme-ov-file
 
 type application struct {
 }
@@ -15,16 +20,18 @@ func webProcess() {
 
 	app := &application{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.home)
-	mux.HandleFunc("/weeks", app.weeks)
+	r := mux.NewRouter()
+	r.HandleFunc("/", app.home)
+	r.HandleFunc("/weeks", app.weeks)
+	r.HandleFunc("/days", app.days)
+	r.HandleFunc("/total", app.total)
+	r.HandleFunc("/category/{name}", app.category)
 
-	fileServer := http.FileServer(http.Dir("./static"))
-	mux.Handle("/static", http.NotFoundHandler())
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	handler := http.StripPrefix("/static/", http.FileServer(http.Dir("./static")))
+	r.PathPrefix("/static/").Handler(handler)
 
 	log.Println("Запуск веб-сервера на http://127.0.0.1:4000")
-	err := http.ListenAndServe(":4000", mux)
+	err := http.ListenAndServe(":4000", r)
 
 	log.Fatal(err)
 }

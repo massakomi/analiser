@@ -24,7 +24,23 @@
             <a class="nav-link" aria-current="page" href="/days">Days</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" aria-current="page" href="/category">Category</a>
+            <a class="nav-link" aria-current="page" href="/total">Total</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Category</a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <li><a class="dropdown-item" href="/category/go">Go</a></li>
+              <li><a class="dropdown-item" href="/category/python">Python</a></li>
+              <li><a class="dropdown-item" href="/category/par">Parterra</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Days</a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <li><a class="dropdown-item" href="/day/24.11">24.11</a></li>
+              <li><a class="dropdown-item" href="/day/23.11">23.11</a></li>
+              <li><a class="dropdown-item" href="/day/22.11">22.11</a></li>
+            </ul>
           </li>
         </ul>
       </div>
@@ -36,6 +52,14 @@
   </div>
 
   <script src="/static/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      document.querySelector('.nav-link.active').classList.remove('active')
+      document.querySelector('[href="'+location.pathname+'"]').classList.add('active')
+    });
+  </script>
+
 </body>
 </html>
 {{end}}

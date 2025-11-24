@@ -1,0 +1,14 @@
+{{template "base" .}}
+
+{{define "title"}}Total{{end}}
+
+{{define "main"}}
+<h2>Total</h2>
+
+<ul>
+    {{range .Results}}
+    <li>{{.}}</li>
+    {{end}}
+</ul>
+
+{{end}}
