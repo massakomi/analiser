@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,10 +25,14 @@ type period struct {
 
 type times map[string]time.Duration
 
-// Сначала разбираем на дату и строки под ней
-func getData() []dayinfo {
+type filter struct {
+	day string
+}
 
-	filename := "F:/Google Диск/Задачи.txt"
+// Сначала разбираем на дату и строки под ней
+func getDataFilter(filter filter) []dayinfo {
+
+	const filename = "F:/Google Диск/Задачи.txt"
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -46,16 +49,19 @@ func getData() []dayinfo {
 		if text == "" {
 			if dateTitle != "" {
 				data = append(data, dayinfo{dateTitle, strings.Join(lines, " ")})
+				if filter.day != "" && filter.day == dateTitle {
+					break
+				}
 				dateTitle = ""
 				lines = []string{}
 			}
 			continue
 		}
-		//
+		// собираем массив строк файла
 		if dateTitle != "" {
 			lines = append(lines, text)
 		}
-		// dateTitle
+		// находим dateTitle
 		re := regexp.MustCompile(`^\d{1,2}[.,]\d\d`)
 		str := re.FindString(text)
 		if str != "" {
@@ -70,9 +76,14 @@ func getData() []dayinfo {
 	return data
 }
 
+func getData() []dayinfo {
+	return getDataFilter(filter{})
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Функции разбора блока текста по дню
-// Разбирает строку на временные интервалы
+
+// Возвращает массив периодов в указанном дне
 func (info dayinfo) getTimeValues() (data []period) {
 	re := regexp.MustCompile(`(^| )\d{1,2}-\d\d`)
 	matches := re.FindAllStringIndex(info.text, -1)
@@ -89,6 +100,7 @@ func (info dayinfo) getTimeValues() (data []period) {
 	return
 }
 
+// getTimeValues без пустых категорий
 func (info dayinfo) getTimeValuesWithoutEmptyCategory() []period {
 	dayValues := info.getTimeValues()
 	data := []period{}
@@ -102,6 +114,7 @@ func (info dayinfo) getTimeValuesWithoutEmptyCategory() []period {
 	return data
 }
 
+// getTimeValues но только периоды с указанной категорией
 func (info dayinfo) getTimeValuesCategory(selectedCategory string) []period {
 	dayValues := info.getTimeValues()
 	data := []period{}
@@ -158,6 +171,7 @@ func (info dayinfo) total() time.Duration {
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Функции конкретного периода времени внутри дня
+
 // Из строки вида HH:mm получаем интервал
 func (p period) parseHoursAndMinutes(str string) time.Duration {
 	var hours, minutes time.Duration
@@ -184,7 +198,7 @@ func (p period) minutes() time.Duration {
 // Извлекаем категорию на основе текста периода
 func (p period) category() string {
 	cat := ""
-	categories := []string{"go", "work", "dev", "sql", "read", "python", "php"}
+	categories := []string{"go", "work", "dev", "sql", "read", "python", "php", "par"}
 	for _, category := range categories {
 		if strings.HasPrefix(p.value, category) {
 			cat = category
@@ -201,7 +215,9 @@ func (p period) minutesString() string {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Форматирующие функции
+// Helpers
+
+// Форматирует время
 func fmtDuration(d time.Duration) string {
 	d = d.Round(time.Minute)
 	h := d / time.Hour
@@ -210,8 +226,7 @@ func fmtDuration(d time.Duration) string {
 	return fmt.Sprintf("%02d:%02d", h, m)
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// хелпер
+// Сортирует ключи словаря
 func mapKeySortedByValues(stat times) []string {
 	keys := make([]string, 0, len(stat))
 	for key := range stat {
@@ -223,20 +238,22 @@ func mapKeySortedByValues(stat times) []string {
 	return keys
 }
 
-func hasArg(arg string) bool {
-	return slices.Contains(os.Args, arg)
+func getFirstElement[T any](s []T) T {
+	return s[0]
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Анализ категории
+
 type dayinfoEx struct {
 	day     string
 	periods []period
 }
 
 // Возвращаем массив дней и периодов (текстов) только по конкретной категории
-func statCategory(selectedCategory string) []dayinfoEx {
-	rows := []dayinfoEx{}
+// По сути это фильтрованный getData состоящий не из dayinfo а из dayinfoEx
+func statCategory(selectedCategory string) (rows []dayinfoEx) {
+	rows = []dayinfoEx{}
 	data := getData()
 	for _, dayinfo := range data {
 		values := dayinfo.getTimeValuesCategory(selectedCategory)
@@ -244,7 +261,7 @@ func statCategory(selectedCategory string) []dayinfoEx {
 			rows = append(rows, dayinfoEx{dayinfo.day, values})
 		}
 	}
-	return rows
+	return
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -253,7 +270,7 @@ func getDayInfoByDate(date string) dayinfo {
 	if date == "" {
 		date = time.Now().Add(-6 * time.Hour).Format("02.01")
 	}
-	data := getData()
+	data := getDataFilter(filter{day: date})
 	for _, dayinfo := range data {
 		if dayinfo.day == date {
 			return dayinfo
