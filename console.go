@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"slices"
 	"strings"
 	"time"
 )
@@ -17,7 +19,7 @@ func consoleProcess() {
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Точка входа для анализа
-func analize(date string, option string, category string) {
+func analize(date, option, category string) {
 	if option == "total" {
 		printTotalConsole()
 	} else if option == "days" {
@@ -36,10 +38,15 @@ func analize(date string, option string, category string) {
 func printAllDaysGraphConsole() {
 	data := getData()
 	for _, dayinfo := range data {
-		total := dayinfo.total()
-		graph := strings.Repeat("-", int(total.Minutes())/5)
-		fmt.Println(dayinfo.day, fmtDuration(total), graph)
+		fmt.Println(dayinfo)
 	}
+}
+
+// Stringer() интерфейс (как магический метод), можно структуру вывести просто строкой  fmt.Println(dayinfo)
+func (info dayinfo) String() string {
+	total := info.total()
+	graph := strings.Repeat("-", int(total.Minutes())/5)
+	return fmt.Sprintf("%v %v %v", info.day, fmtDuration(total), graph)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -121,4 +128,9 @@ func warn() string {
 	var reset = "\033[0m"
 	var red = "\033[31m"
 	return red + "%v" + reset
+}
+
+// Проверяет указан ли этот аргумент в командной строке
+func hasArg(arg string) bool {
+	return slices.Contains(os.Args, arg)
 }
