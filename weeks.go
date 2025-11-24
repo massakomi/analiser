@@ -53,13 +53,13 @@ func groupWeekStat() map[string]time.Duration {
 // Текущий номер недели в году у этого дня
 var currentYear = strconv.FormatInt(int64(time.Now().Year()), 10)
 
-func (info dayinfo) weekNum() int {
+func (info dayinfo) weekNum() (w int) {
 	input := currentYear + "." + info.day
-	layout := "2006.02.01"
+	const layout = "2006.02.01"
 	t, err := time.Parse(layout, input)
 	if err != nil {
 		panic(err)
 	}
-	_, w := t.ISOWeek()
-	return w
+	_, w = t.ISOWeek()
+	return
 }
