@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ import (
 type application struct {
 }
 
-func webProcess() {
+func Process() {
 
 	app := &application{}
 

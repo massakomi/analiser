@@ -1,4 +1,4 @@
-package main
+package lib
 
 import (
 	"maps"
@@ -9,13 +9,13 @@ import (
 
 // Анализ по неделям
 type weekStat struct {
-	category          string
+	Category          string
 	duration          time.Duration
-	durationFormatted string
+	DurationFormatted string
 }
 
 // Уже подготвленный для конечного вывода массив
-func weekStatSorted() []weekStat {
+func WeekStatSorted() []weekStat {
 	stat := groupWeekStat()
 	keys := slices.Sorted(maps.Keys(stat))
 	slices.Reverse(keys)
@@ -26,26 +26,26 @@ func weekStatSorted() []weekStat {
 			category = "--"
 			continue
 		}
-		data = append(data, weekStat{category, duration, fmtDuration(duration)})
+		data = append(data, weekStat{category, duration, FmtDuration(duration)})
 	}
 	return data
 }
 
 // Простая несортированная структура с пустыми категориями
 func groupWeekStat() map[string]time.Duration {
-	data := getData()
+	data := GetData()
 	stat := map[string]time.Duration{}
 	prevDay := ""
 	prevWeek := ""
 	slices.Reverse(data)
 	for _, dayinfo := range data {
-		week := dayinfo.weekNum()
+		week := dayinfo.WeekNum()
 		weekStr := strconv.FormatInt(int64(week), 10)
 		if prevDay == "" || weekStr != prevWeek {
-			prevDay = dayinfo.day
+			prevDay = dayinfo.Day
 		}
 		prevWeek = weekStr
-		stat[weekStr+"/"+prevDay] += dayinfo.total()
+		stat[weekStr+"/"+prevDay] += dayinfo.Total()
 	}
 	return stat
 }
@@ -53,8 +53,8 @@ func groupWeekStat() map[string]time.Duration {
 // Текущий номер недели в году у этого дня
 var currentYear = strconv.FormatInt(int64(time.Now().Year()), 10)
 
-func (info dayinfo) weekNum() (w int) {
-	input := currentYear + "." + info.day
+func (info Dayinfo) WeekNum() (w int) {
+	input := currentYear + "." + info.Day
 	const layout = "2006.02.01"
 	t, err := time.Parse(layout, input)
 	if err != nil {

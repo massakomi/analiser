@@ -1,6 +1,7 @@
-package main
+package console
 
 import (
+	"analiser/pkg/lib"
 	"flag"
 	"fmt"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"time"
 )
 
-func consoleProcess() {
+func Process() {
 	var option = flag.String("o", "", "sub option for script")
 	var date = flag.String("date", "", "date for analizer")
 	var category = flag.String("c", "", "category for analizer")
@@ -36,29 +37,22 @@ func analize(date, option, category string) {
 // ---------------------------------------------------------------------------------------------------------------------
 // Статистика по всем дням в виде графика
 func printAllDaysGraphConsole() {
-	data := getData()
+	data := lib.GetData()
 	for _, dayinfo := range data {
 		fmt.Println(dayinfo)
 	}
 }
 
-// Stringer() интерфейс (как магический метод), можно структуру вывести просто строкой  fmt.Println(dayinfo)
-func (info dayinfo) String() string {
-	total := info.total()
-	graph := strings.Repeat("-", int(total.Minutes())/5)
-	return fmt.Sprintf("%v %v %v", info.day, fmtDuration(total), graph)
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
 // Анализ категории
 func printCategoryConsole(selectedCategory string) {
-	rows := statCategory(selectedCategory)
+	rows := lib.StatCategory(selectedCategory)
 	for _, stat := range rows {
 		values := []string{}
-		for _, period := range stat.periods {
-			values = append(values, "["+fmtDuration(period.minutes())+"] "+period.value)
+		for _, period := range stat.Periods {
+			values = append(values, "["+lib.FmtDuration(period.Minutes())+"] "+period.Value)
 		}
-		fmt.Println(stat.day)
+		fmt.Println(stat.Day)
 		fmt.Println(strings.Join(values, "\n"))
 		fmt.Println(strings.Repeat("-", 100))
 	}
@@ -67,19 +61,19 @@ func printCategoryConsole(selectedCategory string) {
 // ---------------------------------------------------------------------------------------------------------------------
 // По неделям
 func printWeeksConsole() {
-	data := weekStatSorted()
+	data := lib.WeekStatSorted()
 	for _, week := range data {
-		fmt.Println(week.category + " " + week.durationFormatted)
+		fmt.Println(week.Category + " " + week.DurationFormatted)
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Суммарное количество времени за все дни
 func printTotalConsole() {
-	data := getData()
-	stat := times{}
+	data := lib.GetData()
+	stat := lib.Times{}
 	for _, dayinfo := range data {
-		stat = dayinfo.sumStat(stat)
+		stat = dayinfo.SumStat(stat)
 	}
 	viewStatConsole(stat, "Total")
 }
@@ -87,26 +81,26 @@ func printTotalConsole() {
 // ---------------------------------------------------------------------------------------------------------------------
 // Анализ за конкретный день
 func printDateStatConsole(date string) {
-	info := getDayInfoByDate(date)
-	data := info.getTimeValuesWithoutEmptyCategory()
+	info := lib.GetDayinfoByDate(date)
+	data := info.GetTimeValuesWithoutEmptyCategory()
 
 	fmt.Println(date)
 	fmt.Println(strings.Repeat("=", 60))
 	for _, period := range data {
-		fmt.Println("["+period.minutesString()+"]", period.value)
+		fmt.Println("["+period.MinutesString()+"]", period.Value)
 	}
-	stat := times{}
-	stat = info.sumStat(stat)
-	viewStatConsole(stat, info.day)
+	stat := lib.Times{}
+	stat = info.SumStat(stat)
+	viewStatConsole(stat, info.Day)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Выводит массив статистики по категориям с заголовком
-func viewStatConsole(stat times, title string) {
+func viewStatConsole(stat lib.Times, title string) {
 	fmt.Println(strings.Repeat("=", 60))
 	fmt.Println(title)
 	total := time.Duration(0)
-	keys := mapKeySortedByValues(stat)
+	keys := lib.MapKeySortedByValues(stat)
 	for _, category := range keys {
 		duration := stat[category]
 		if category == "" {
@@ -115,10 +109,10 @@ func viewStatConsole(stat times, title string) {
 		} else {
 			total += duration
 		}
-		fmt.Printf(warn()+" "+fmtDuration(duration)+" ", category)
+		fmt.Printf(warn()+" "+lib.FmtDuration(duration)+" ", category)
 	}
 	fmt.Printf("\n"+warn()+" ", "Total:")
-	fmt.Println(fmtDuration(total))
+	fmt.Println(lib.FmtDuration(total))
 }
 
 func warn() string {
