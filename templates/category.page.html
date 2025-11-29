@@ -3,12 +3,9 @@
 {{define "title"}}Category{{end}}
 
 {{define "main"}}
-<h2>{{ .Category }} category</h2>
-
 <ul>
-    {{range .Results}}
+    {{range .data}}
     <li>{{.}}</li>
     {{end}}
 </ul>
-
 {{end}}

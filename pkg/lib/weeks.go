@@ -10,7 +10,7 @@ import (
 // Анализ по неделям
 type weekStat struct {
 	Category          string
-	duration          time.Duration
+	Duration          time.Duration
 	DurationFormatted string
 }
 

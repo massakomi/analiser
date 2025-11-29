@@ -25,12 +25,8 @@ type Period struct {
 
 type Times map[string]time.Duration
 
-type filter struct {
-	day string
-}
-
 // Сначала разбираем на дату и строки под ней
-func getDataFilter(filter filter) []Dayinfo {
+func GetData() []Dayinfo {
 
 	const filename = "F:/Google Диск/Задачи.txt"
 
@@ -49,9 +45,9 @@ func getDataFilter(filter filter) []Dayinfo {
 		if text == "" {
 			if dateTitle != "" {
 				data = append(data, Dayinfo{dateTitle, strings.Join(lines, " ")})
-				if filter.day != "" && filter.day == dateTitle {
+				/*if filter.day != "" && filter.day == dateTitle {
 					break
-				}
+				}*/
 				dateTitle = ""
 				lines = []string{}
 			}
@@ -61,12 +57,7 @@ func getDataFilter(filter filter) []Dayinfo {
 		if dateTitle != "" {
 			lines = append(lines, text)
 		}
-		// находим dateTitle
-		re := regexp.MustCompile(`^\d{1,2}[.,]\d\d`)
-		str := re.FindString(text)
-		if str != "" {
-			dateTitle = strings.Replace(str, ",", ".", 1)
-		}
+		findDateTitle(text, &dateTitle)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -76,8 +67,25 @@ func getDataFilter(filter filter) []Dayinfo {
 	return data
 }
 
-func GetData() []Dayinfo {
-	return getDataFilter(filter{})
+// находим dateTitle
+func findDateTitle(text string, dateTitle *string) {
+	re := regexp.MustCompile(`^\d{1,2}[.,]\d\d`)
+	str := re.FindString(text)
+	if str != "" {
+		*dateTitle = strings.Replace(str, ",", ".", 1)
+	}
+}
+
+func Last7days() []string {
+	data := GetData()
+	var lastDays []string
+	for _, item := range data {
+		lastDays = append(lastDays, item.Day)
+		if len(lastDays) == 7 {
+			break
+		}
+	}
+	return lastDays
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -205,8 +213,7 @@ func (p Period) Minutes() time.Duration {
 // Извлекаем категорию на основе текста периода
 func (p Period) category() string {
 	cat := ""
-	categories := []string{"go", "work", "dev", "sql", "read", "python", "php", "par"}
-	for _, category := range categories {
+	for _, category := range Categories {
 		if strings.HasPrefix(p.Value, category) {
 			cat = category
 			break
@@ -214,6 +221,8 @@ func (p Period) category() string {
 	}
 	return cat
 }
+
+var Categories = []string{"go", "work", "dev", "sql", "read", "python", "php", "par"}
 
 // Минуты преобразовать в строку
 func (p Period) MinutesString() string {
@@ -277,7 +286,7 @@ func GetDayinfoByDate(date string) Dayinfo {
 	if date == "" {
 		date = time.Now().Add(-6 * time.Hour).Format("02.01")
 	}
-	data := getDataFilter(filter{day: date})
+	data := GetData()
 	for _, Dayinfo := range data {
 		if Dayinfo.Day == date {
 			return Dayinfo

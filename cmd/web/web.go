@@ -1,6 +1,7 @@
 package web
 
 import (
+	"analiser/pkg/lib"
 	"fmt"
 	"github.com/gorilla/mux"
 	"html/template"
@@ -26,6 +27,7 @@ func Process() {
 	r.HandleFunc("/days", app.days)
 	r.HandleFunc("/total", app.total)
 	r.HandleFunc("/category/{name}", app.category)
+	r.HandleFunc("/day/{date}", app.day)
 
 	handler := http.StripPrefix("/static/", http.FileServer(http.Dir("./static")))
 	r.PathPrefix("/static/").Handler(handler)
@@ -36,10 +38,9 @@ func Process() {
 	log.Fatal(err)
 }
 
-func (app *application) display(tpl string, w http.ResponseWriter, data any) {
+func (app *application) display(tpl string, w http.ResponseWriter, data map[string]any) {
 	files := []string{
 		"./templates/" + tpl,
-		//"./templates/home.page.html",
 		"./templates/base.layout.html",
 	}
 
@@ -48,6 +49,12 @@ func (app *application) display(tpl string, w http.ResponseWriter, data any) {
 		app.serverError(w, err)
 		return
 	}
+
+	if data == nil {
+		data = map[string]any{}
+	}
+	data["categories"] = lib.Categories
+	data["days"] = lib.Last7days()
 
 	err = ts.Execute(w, data)
 	if err != nil {

@@ -29,17 +29,17 @@
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Category</a>
             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <li><a class="dropdown-item" href="/category/go">Go</a></li>
-              <li><a class="dropdown-item" href="/category/python">Python</a></li>
-              <li><a class="dropdown-item" href="/category/par">Parterra</a></li>
+              {{ range .categories }}
+              <li><a class="dropdown-item" href="/category/{{ . }}">{{ . }}</a></li>
+              {{ end }}
             </ul>
           </li>
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Days</a>
             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <li><a class="dropdown-item" href="/day/24.11">24.11</a></li>
-              <li><a class="dropdown-item" href="/day/23.11">23.11</a></li>
-              <li><a class="dropdown-item" href="/day/22.11">22.11</a></li>
+              {{ range .days }}
+              <li><a class="dropdown-item" href="/day/{{ . }}">{{ . }}</a></li>
+              {{ end }}
             </ul>
           </li>
         </ul>
@@ -47,7 +47,8 @@
     </div>
   </nav>
 
-  <div class="container-fluid">
+  <div class="container-fluid mt-3">
+      <h2 class="mb-3">{{template "title" .}}</h2>
       {{template "main" .}}
   </div>
 

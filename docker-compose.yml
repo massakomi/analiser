@@ -1,0 +1,9 @@
+services:
+  golang:
+    build: .
+    container_name: golang-analiser
+    ports:
+      - 4000:4000
+    volumes:
+      - ./static:/build/static
+      - ./templates:/build/templates

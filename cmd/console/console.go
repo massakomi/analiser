@@ -29,6 +29,8 @@ func analize(date, option, category string) {
 		printWeeksConsole()
 	} else if category != "" {
 		printCategoryConsole(category)
+	} else if option == "test" {
+		printTest()
 	} else {
 		printDateStatConsole(date)
 	}

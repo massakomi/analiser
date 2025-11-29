@@ -3,12 +3,9 @@
 {{define "title"}}Days{{end}}
 
 {{define "main"}}
-<h2>Days</h2>
-
 <ul>
-    {{range .Results}}
+    {{range .data}}
     <li>{{.}}</li>
     {{end}}
 </ul>
-
 {{end}}

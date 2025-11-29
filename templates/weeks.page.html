@@ -3,12 +3,20 @@
 {{define "title"}}Weeks{{end}}
 
 {{define "main"}}
-    <h2>Weeks</h2>
-
-    <ul>
-        {{range .Results}}
-        <li>{{.}}</li>
+    <ul class="list-group">
+        {{range .data}}
+        <li class="list-group-item">
+            <div class="row align-items-start justify-content-start">
+                <div class="col-2">
+                    {{ .text }}
+                </div>
+                <div class="col-10">
+                    <div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="{{ .percent }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar" style="width: {{ .percent }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </li>
         {{end}}
     </ul>
-
 {{end}}
