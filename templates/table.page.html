@@ -1,0 +1,36 @@
+{{template "base" .}}
+
+{{define "title"}}Table{{end}}
+
+{{define "main"}}
+<style>
+  td {font-size: 12px}
+</style>
+<div class="table-responsive">
+<table class="table table-striped table-hover table-sm">
+  {{ $dates := .dates }}
+  {{ $data := .data }}
+  <thead>
+  <tr>
+    <th scope="col"></th>
+    {{ range $dates }}
+    <th scope="col">{{ .day }}</th>
+    {{ end }}
+    <th scope="col"></th>
+  </tr>
+  </thead>
+  <tbody class="table-group-divider">
+  {{ range .categories }}
+    {{ $category := . }}
+    <tr>
+      <td>{{ . }}</td>
+      {{ range $dates }}
+        <td>{{ index $data .date $category }}</td>
+      {{ end }}
+      <td>{{ . }}</td>
+    </tr>
+  {{ end }}
+  </tbody>
+</table>
+</div>
+{{end}}

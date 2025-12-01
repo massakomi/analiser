@@ -123,3 +123,33 @@ func (app *application) category(w http.ResponseWriter, r *http.Request) {
 	}
 	app.display("category.page.html", w, p)
 }
+
+func (app *application) table(w http.ResponseWriter, r *http.Request) {
+	var dates []map[string]string
+	all := lib.GetData()
+	table := map[string]map[string]string{}
+	for _, dayinfo := range all {
+		data := dayinfo.GetTimeValuesWithoutEmptyCategory()
+		dates = append(dates, map[string]string{
+			"date": dayinfo.Day,
+			"day":  strings.TrimLeft(dayinfo.Day[0:2], "0"),
+		})
+		sums := map[string]time.Duration{}
+		for _, period := range data {
+			if table[dayinfo.Day] == nil {
+				table[dayinfo.Day] = map[string]string{}
+			}
+			sums[period.Category()] += period.Minutes()
+		}
+		for category, minutes := range sums {
+			table[dayinfo.Day][category] = strconv.FormatInt(int64(minutes.Minutes()), 10)
+		}
+	}
+
+	p := map[string]any{
+		"data":       table,
+		"categories": lib.Categories,
+		"dates":      dates,
+	}
+	app.display("table.page.html", w, p)
+}

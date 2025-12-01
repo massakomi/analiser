@@ -113,7 +113,7 @@ func (info Dayinfo) GetTimeValuesWithoutEmptyCategory() []Period {
 	dayValues := info.getTimeValues()
 	data := []Period{}
 	for _, Period := range dayValues {
-		category := Period.category()
+		category := Period.Category()
 		if category == "" {
 			continue
 		}
@@ -127,7 +127,7 @@ func (info Dayinfo) getTimeValuesCategory(selectedCategory string) []Period {
 	dayValues := info.getTimeValues()
 	data := []Period{}
 	for _, Period := range dayValues {
-		category := Period.category()
+		category := Period.Category()
 		if category != selectedCategory {
 			continue
 		}
@@ -157,7 +157,7 @@ func (info Dayinfo) SumStat(stat Times) Times {
 	dayValues := info.getTimeValues()
 	for _, Period := range dayValues {
 		minutes := Period.Minutes()
-		category := Period.category()
+		category := Period.Category()
 		stat[category] += minutes
 	}
 	return stat
@@ -169,7 +169,7 @@ func (info Dayinfo) Total() time.Duration {
 	dayValues := info.getTimeValues()
 	for _, Period := range dayValues {
 		minutes := Period.Minutes()
-		if Period.category() == "" {
+		if Period.Category() == "" {
 			continue
 		}
 		total += minutes
@@ -211,7 +211,7 @@ func (p Period) Minutes() time.Duration {
 }
 
 // Извлекаем категорию на основе текста периода
-func (p Period) category() string {
+func (p Period) Category() string {
 	cat := ""
 	for _, category := range Categories {
 		if strings.HasPrefix(p.Value, category) {
@@ -222,7 +222,7 @@ func (p Period) category() string {
 	return cat
 }
 
-var Categories = []string{"go", "work", "dev", "sql", "read", "python", "php", "par"}
+var Categories = []string{"par", "go", "python", "dev", "work", "sql", "read", "php"}
 
 // Минуты преобразовать в строку
 func (p Period) MinutesString() string {

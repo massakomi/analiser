@@ -2,12 +2,17 @@ package web
 
 import (
 	"analiser/pkg/lib"
+	"context"
 	"fmt"
 	"github.com/gorilla/mux"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"runtime/debug"
+	"strings"
+	"time"
 )
 
 // Routing (using gorilla/mux)
@@ -21,30 +26,57 @@ func Process() {
 
 	app := &application{}
 
-	r := mux.NewRouter()
-	r.HandleFunc("/", app.home)
-	r.HandleFunc("/weeks", app.weeks)
-	r.HandleFunc("/days", app.days)
-	r.HandleFunc("/total", app.total)
-	r.HandleFunc("/category/{name}", app.category)
-	r.HandleFunc("/day/{date}", app.day)
+	router := mux.NewRouter()
+	router.HandleFunc("/", app.home)
+	router.HandleFunc("/table", app.table).Methods("GET")
+	router.HandleFunc("/weeks", app.weeks)
+	router.HandleFunc("/days", app.days)
+	router.HandleFunc("/total", app.total)
+	router.HandleFunc("/category/{name}", app.category)
+	router.HandleFunc("/day/{date}", app.day)
+	router.Use(loggingMiddleware)
 
 	handler := http.StripPrefix("/static/", http.FileServer(http.Dir("./static")))
-	r.PathPrefix("/static/").Handler(handler)
+	router.PathPrefix("/static/").Handler(handler)
 
 	log.Println("Запуск веб-сервера на http://127.0.0.1:4000")
-	err := http.ListenAndServe(":4000", r)
+	shutdown(router)
+	//err := http.ListenAndServe(":4000", router)
+	//log.Fatal(err)
+}
 
-	log.Fatal(err)
+// loggingMiddleware https://github.com/gorilla/mux?tab=readme-ov-file#middleware
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/static/") {
+			filename := "data/log.txt"
+			content := time.Now().Format("2006-01-02 15:04:05") + " " + r.RequestURI + "\n"
+			f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+			if _, err = f.WriteString(content); err != nil {
+				panic(err)
+			}
+		}
+		// Call the next handler, which can be another middleware in the chain, or the final handler.
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (app *application) display(tpl string, w http.ResponseWriter, data map[string]any) {
+
+	var funcMap = template.FuncMap{
+		"lower":  strings.ToLower,
+		"repeat": func(s string) string { return strings.Repeat(s, 2) },
+	}
+
 	files := []string{
 		"./templates/" + tpl,
 		"./templates/base.layout.html",
 	}
-
-	ts, err := template.ParseFiles(files...)
+	ts, err := template.New(tpl).Funcs(funcMap).ParseFiles(files...)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -60,6 +92,51 @@ func (app *application) display(tpl string, w http.ResponseWriter, data map[stri
 	if err != nil {
 		app.serverError(w, err)
 	}
+}
+
+// shutdown Graceful
+// Go 1.8 introduced the ability to gracefully shutdown a *http.Server. Here's how to do that alongside mux:
+func shutdown(router *mux.Router) {
+	//var wait time.Duration
+	//flag.DurationVar(&wait, "graceful-timeout", time.Second * 15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
+	//flag.Parse()
+	wait := time.Second * 15
+
+	srv := &http.Server{
+		Addr: ":4000",
+		// Good practice to set timeouts to avoid Slowloris attacks.
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      router, // Pass our instance of gorilla/mux in.
+	}
+
+	// Run our server in a goroutine so that it doesn't block.
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+
+	// Block until we receive our signal.
+	<-c
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	srv.Shutdown(ctx)
+	// Optionally, you could run srv.Shutdown in a goroutine and block on
+	// <-ctx.Done() if your application should wait for other services
+	// to finalize based on context cancellation.
+	log.Println("shutting down")
+	os.Exit(0)
 }
 
 func (app *application) serverError(w http.ResponseWriter, err error) {
