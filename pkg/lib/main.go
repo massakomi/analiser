@@ -25,9 +25,7 @@ type Period struct {
 
 type Times map[string]time.Duration
 
-// Сначала разбираем на дату и строки под ней
-func GetData() []Dayinfo {
-
+func taskLines(yield func(string) bool) {
 	const filename = "F:/Google Диск/Задачи.txt"
 
 	file, err := os.Open(filename)
@@ -37,11 +35,21 @@ func GetData() []Dayinfo {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		yield(scanner.Text())
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+// Сначала разбираем на дату и строки под ней
+func GetData() []Dayinfo {
 	dateTitle := ""
 	lines := []string{}
 	data := []Dayinfo{}
-	for scanner.Scan() {
-		text := scanner.Text()
+	for text := range taskLines {
 		if text == "" {
 			if dateTitle != "" {
 				data = append(data, Dayinfo{dateTitle, strings.Join(lines, " ")})
@@ -59,11 +67,6 @@ func GetData() []Dayinfo {
 		}
 		findDateTitle(text, &dateTitle)
 	}
-
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
 	return data
 }
 
@@ -71,6 +74,13 @@ func GetData() []Dayinfo {
 func findDateTitle(text string, dateTitle *string) {
 	re := regexp.MustCompile(`^\d{1,2}[.,]\d\d`)
 	str := re.FindString(text)
+	if str == "" {
+		return
+	}
+	str = strings.TrimSpace(str)
+	if len(str) != 5 {
+		str = "0" + str
+	}
 	if str != "" {
 		*dateTitle = strings.Replace(str, ",", ".", 1)
 	}
