@@ -8,6 +8,11 @@ import (
 )
 
 func printTest() {
+	data := lib.Categories()
+	fmt.Println(data)
+}
+
+func printWeekTest() {
 	data := lib.WeekStatSorted()
 	maxDuration := time.Duration(0)
 	for _, week := range data {

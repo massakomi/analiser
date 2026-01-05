@@ -3,9 +3,20 @@
 {{define "title"}}Days{{end}}
 
 {{define "main"}}
-<ul>
-    {{range .data}}
-    <li>{{.}}</li>
-    {{end}}
-</ul>
+    <ul class="list-group">
+        {{range .data}}
+        <li class="list-group-item" style="padding: 0 16px;">
+            <div class="row align-items-start justify-content-start">
+                <div class="col-2">
+                    {{ .text }}
+                </div>
+                <div class="col-10" title="{{ .time }}">
+                    <div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="{{ .percent }}" aria-valuemin="0" aria-valuemax="100" style="height: 5px;  margin-top: 10px;">
+                        <div class="progress-bar" style="width: {{ .percent }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </li>
+        {{end}}
+    </ul>
 {{end}}

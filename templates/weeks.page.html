@@ -10,7 +10,7 @@
                 <div class="col-2">
                     {{ .text }}
                 </div>
-                <div class="col-10">
+                <div class="col-10" title="{{ .time }}">
                     <div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="{{ .percent }}" aria-valuemin="0" aria-valuemax="100">
                         <div class="progress-bar" style="width: {{ .percent }}%"></div>
                     </div>

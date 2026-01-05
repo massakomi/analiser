@@ -2,10 +2,12 @@ package lib
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,14 +15,10 @@ import (
 )
 
 type Dayinfo struct {
-	Day  string
-	text string
-}
-
-type Period struct {
-	prevTime string
-	time     string
-	Value    string
+	Day   string
+	text  string
+	Month string
+	Year  int
 }
 
 type Times map[string]time.Duration
@@ -52,7 +50,8 @@ func GetData() []Dayinfo {
 	for text := range taskLines {
 		if text == "" {
 			if dateTitle != "" {
-				data = append(data, Dayinfo{dateTitle, strings.Join(lines, " ")})
+				month, year := getMonthYear(data, dateTitle)
+				data = append(data, Dayinfo{dateTitle, strings.Join(lines, " "), month, year})
 				/*if filter.day != "" && filter.day == dateTitle {
 					break
 				}*/
@@ -68,6 +67,24 @@ func GetData() []Dayinfo {
 		findDateTitle(text, &dateTitle)
 	}
 	return data
+}
+
+var currentYear = time.Now().Year()
+
+// Извлекает текущий месяц и год из строки данных вида "ДД.ММ" "30.12"
+func getMonthYear(data []Dayinfo, dateTitle string) (string, int) {
+	month := ""
+	year := currentYear
+	month = dateTitle[strings.Index(dateTitle, ".")+1:]
+	if len(data) > 0 {
+		nextDateTitle := data[len(data)-1].Day
+		year = data[len(data)-1].Year
+		nextMonth := nextDateTitle[strings.Index(nextDateTitle, ".")+1:]
+		if nextMonth < month {
+			year--
+		}
+	}
+	return month, year
 }
 
 // находим dateTitle
@@ -99,103 +116,13 @@ func Last7days() []string {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Функции разбора блока текста по дню
-
-// Возвращает массив периодов в указанном дне
-func (info Dayinfo) getTimeValues() (data []Period) {
-	re := regexp.MustCompile(`(^| )\d{1,2}-\d\d`)
-	matches := re.FindAllStringIndex(info.text, -1)
-	data = []Period{}
-	prevTime := ""
-	for index, match := range matches {
-		time := strings.TrimSpace(info.text[match[0]:match[1]])
-		value := info.getTextForTime(index, match, matches)
-		if value != "" {
-			data = append(data, Period{prevTime, time, value})
-		}
-		prevTime = time
-	}
-	return
-}
-
-// getTimeValues без пустых категорий
-func (info Dayinfo) GetTimeValuesWithoutEmptyCategory() []Period {
-	dayValues := info.getTimeValues()
-	data := []Period{}
-	for _, Period := range dayValues {
-		category := Period.Category()
-		if category == "" {
-			continue
-		}
-		data = append(data, Period)
-	}
-	return data
-}
-
-// getTimeValues но только периоды с указанной категорией
-func (info Dayinfo) getTimeValuesCategory(selectedCategory string) []Period {
-	dayValues := info.getTimeValues()
-	data := []Period{}
-	for _, Period := range dayValues {
-		category := Period.Category()
-		if category != selectedCategory {
-			continue
-		}
-		data = append(data, Period)
-	}
-	return data
-}
-
-// Получаем текст, относящийся к временному отрезку из текста info.text
-func (info Dayinfo) getTextForTime(index int, match []int, matches [][]int) string {
-	value := ""
-	nextIndex := index + 1
-	if len(matches)-1 >= nextIndex {
-		nextMatch := matches[nextIndex]
-		value = info.text[match[1]:nextMatch[0]]
-	} else {
-		value = info.text[match[1]:]
-	}
-	if len(value) > 0 {
-		value = value[1:]
-	}
-	return value
-}
-
-// Суммируем статистику за день (категория - время)
-func (info Dayinfo) SumStat(stat Times) Times {
-	dayValues := info.getTimeValues()
-	for _, Period := range dayValues {
-		minutes := Period.Minutes()
-		category := Period.Category()
-		stat[category] += minutes
-	}
-	return stat
-}
-
-// Всего времени отработано за день
-func (info Dayinfo) Total() time.Duration {
-	total := time.Duration(0)
-	dayValues := info.getTimeValues()
-	for _, Period := range dayValues {
-		minutes := Period.Minutes()
-		if Period.Category() == "" {
-			continue
-		}
-		total += minutes
-	}
-	return total
-}
-
-// Stringer() интерфейс (как магический метод), можно структуру вывести просто строкой  fmt.Println(dayinfo)
-func (info Dayinfo) String() string {
-	total := info.Total()
-	graph := strings.Repeat("-", int(total.Minutes())/5)
-	return fmt.Sprintf("%v %v %v", info.Day, FmtDuration(total), graph)
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 // Функции конкретного периода времени внутри дня
+
+type Period struct {
+	prevTime string
+	time     string
+	Value    string
+}
 
 // Из строки вида HH:mm получаем интервал
 func (p Period) parseHoursAndMinutes(str string) time.Duration {
@@ -222,17 +149,16 @@ func (p Period) Minutes() time.Duration {
 
 // Извлекаем категорию на основе текста периода
 func (p Period) Category() string {
-	cat := ""
-	for _, category := range Categories {
-		if strings.HasPrefix(p.Value, category) {
-			cat = category
-			break
+	categories := Categories()
+	spaceIndex := strings.Index(p.Value, " ")
+	if spaceIndex > 0 {
+		cat := p.Value[:spaceIndex]
+		if slices.Contains(categories, cat) {
+			return cat
 		}
 	}
-	return cat
+	return ""
 }
-
-var Categories = []string{"par", "go", "python", "dev", "work", "sql", "read", "php"}
 
 // Минуты преобразовать в строку
 func (p Period) MinutesString() string {
@@ -263,9 +189,43 @@ func MapKeySortedByValues(stat Times) []string {
 	})
 	return keys
 }
+func MapKeySortedByValuesAssoc(stat map[string]int) []string {
+	keys := make([]string, 0, len(stat))
+	for key := range stat {
+		keys = append(keys, key)
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return stat[keys[i]] > stat[keys[j]]
+	})
+	return keys
+}
 
 func getFirstElement[T any](s []T) T {
 	return s[0]
+}
+
+func AppendToFile(filename string, content string) {
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	if _, err = f.WriteString(content); err != nil {
+		panic(err)
+	}
+}
+
+func WriteFile(filename string, content []byte) {
+	err := os.WriteFile(filename, content, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func sliceUnique(strings []string) []string {
+	slices.Sort(strings)
+	strings = slices.Compact(strings)
+	return strings
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -290,11 +250,64 @@ func StatCategory(selectedCategory string) (rows []DayinfoEx) {
 	return
 }
 
+var categories = []string{}
+
+// Доступные категории
+func Categories() []string {
+	if len(categories) == 0 {
+		filename := "data/categories.json"
+		jsonData, err := os.ReadFile(filename)
+		if err != nil {
+			log.Fatalf(`File %v not found`, filename)
+		}
+		err = json.Unmarshal(jsonData, &categories)
+		if err != nil {
+			log.Fatalf(`Error parsing json categories: %v`, jsonData)
+		}
+	}
+	return categories
+}
+
+func CategoryAdd(category string) {
+	categories := Categories()
+	if !slices.Contains(categories, category) {
+		categories = append(categories, category)
+		CategoriesSave(categories)
+	}
+}
+
+func CategoryDelete(name string) {
+	categories := Categories()
+	if slices.Contains(categories, name) {
+		current := slices.Index(categories, name)
+		categories = slices.Delete(categories, current, current+1)
+		CategoriesSave(categories)
+	}
+}
+
+func CategoryEdit(name string, currentName string) {
+	categories := Categories()
+	if slices.Contains(categories, currentName) {
+		current := slices.Index(categories, currentName)
+		categories = slices.Delete(categories, current, current+1)
+		categories = append(categories, name)
+		CategoriesSave(categories)
+	}
+}
+
+func CategoriesSave(data []string) {
+	filename := "data/categories.json"
+	content, _ := json.MarshalIndent(data, "", "  ")
+	WriteFile(filename, content)
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Статистика за конкретный день
 func GetDayinfoByDate(date string) Dayinfo {
 	if date == "" {
 		date = time.Now().Add(-6 * time.Hour).Format("02.01")
+	} else if len(date) == 4 {
+		date = "0" + date
 	}
 	data := GetData()
 	for _, Dayinfo := range data {

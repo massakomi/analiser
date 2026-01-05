@@ -3,9 +3,18 @@
 {{define "title"}}Статистика за последние 7 дней{{end}}
 
 {{define "main"}}
-<ul>
     {{range .data}}
-    <li>{{.}}</li>
+    <ul class="list-group mb-3">
+        <li class="list-group-item">
+            <div class="d-flex flex-row gap-4 align-items-baseline">
+                <h5>{{ index . "day" }}</h5>
+                <span>{{ index . "totals" }}</span>
+            </div>
+        </li>
+        {{ $rows := index . "rows" }}
+        {{range $rows}}
+            <li class="list-group-item">{{ . }}</li>
+        {{end}}
+    </ul>
     {{end}}
-</ul>
 {{end}}

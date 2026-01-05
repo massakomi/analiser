@@ -3,9 +3,9 @@
 {{define "title"}}{{ .date }}{{end}}
 
 {{define "main"}}
-<ul>
+<ul class="list-group">
     {{range .data}}
-    <li>{{.}}</li>
+    <li class="list-group-item">{{.}}</li>
     {{end}}
 </ul>
 {{end}}

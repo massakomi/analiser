@@ -2,7 +2,6 @@ package web
 
 import (
 	"analiser/pkg/lib"
-	"strings"
 	"time"
 )
 
@@ -28,9 +27,9 @@ func viewStatWeb(stat lib.Times) []string {
 func dayRowsByDayInfo(info lib.Dayinfo) []string {
 	data := info.GetTimeValuesWithoutEmptyCategory()
 	rows := []string{}
-	rows = append(rows, strings.Repeat("=", 60))
+	//rows = append(rows, strings.Repeat("=", 60))
 	rows = append(rows, info.Day)
-	rows = append(rows, strings.Repeat("=", 60))
+	//rows = append(rows, strings.Repeat("=", 60))
 	for _, period := range data {
 		rows = append(rows, "["+period.MinutesString()+"] "+period.Value)
 	}

@@ -33,6 +33,7 @@ func Process() {
 	router.HandleFunc("/days", app.days)
 	router.HandleFunc("/total", app.total)
 	router.HandleFunc("/category/{name}", app.category)
+	router.HandleFunc("/manage/", app.manage)
 	router.HandleFunc("/day/{date}", app.day)
 	router.Use(loggingMiddleware)
 
@@ -45,26 +46,21 @@ func Process() {
 	//log.Fatal(err)
 }
 
+var startTime = time.Now()
+
 // loggingMiddleware https://github.com/gorilla/mux?tab=readme-ov-file#middleware
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		startTime = time.Now()
 		if !strings.HasPrefix(r.URL.Path, "/static/") {
 			filename := "data/log.txt"
 			content := time.Now().Format("2006-01-02 15:04:05") + " " + r.RequestURI + "\n"
-			f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-			if err != nil {
-				panic(err)
-			}
-			defer f.Close()
-			if _, err = f.WriteString(content); err != nil {
-				panic(err)
-			}
+			lib.AppendToFile(filename, content)
 		}
 		// Call the next handler, which can be another middleware in the chain, or the final handler.
 		next.ServeHTTP(w, r)
 	})
 }
-
 func (app *application) display(tpl string, w http.ResponseWriter, data map[string]any) {
 
 	var funcMap = template.FuncMap{
@@ -85,10 +81,13 @@ func (app *application) display(tpl string, w http.ResponseWriter, data map[stri
 	if data == nil {
 		data = map[string]any{}
 	}
-	data["categories"] = lib.Categories
+	data["categories"] = lib.Categories()
 	data["days"] = lib.Last7days()
 
 	err = ts.Execute(w, data)
+
+	fmt.Printf("tpl %v, time: %v\n", tpl, time.Since(startTime))
+
 	if err != nil {
 		app.serverError(w, err)
 	}
